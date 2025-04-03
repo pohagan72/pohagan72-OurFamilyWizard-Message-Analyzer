@@ -19,6 +19,7 @@ A web application for analyzing message logs from OurFamilyWizard (OFW) communic
   - Monthly analysis reports
   - Yearly summary reports
 - **Cloud Integration**: Option to upload results to Azure Blob Storage
+- **Output Examples**: Check out the **Output Example** folder for a **redacted** sample of an annual summary of communications
 
 ## Installation
 
