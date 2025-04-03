@@ -1,1 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OFW Message Parser & Analyzer</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+            background-color: #f4f4f4;
+            line-height: 1.6;
+        }
+        .container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            max-width: 700px;
+            margin: 40px auto;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+         h2 {
+            color: #555;
+            text-align: center;
+            margin-bottom: 25px;
+            font-size: 1.2em;
+            font-weight: normal;
+        }
+        .flash-messages {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 20px 0;
+        }
+        .flash-messages li {
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            font-weight: bold;
+            border: 1px solid transparent;
+        }
+        .flash-messages .success {
+            background-color: #d4edda;
+            color: #155724;
+            border-color: #c3e6cb;
+        }
+        .flash-messages .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border-color: #f5c6cb;
+        }
+        .flash-messages .info { /* Style for informational messages */
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border-color: #bee5eb;
+        }
+        .flash-messages .warning { /* Style for warning messages */
+            background-color: #fff3cd;
+            color: #856404;
+            border-color: #ffeeba;
+        }
+        label {
+            /* display: block; */ /* Modified for radio buttons */
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+        }
+        input[type="file"] {
+            display: block;
+            width: calc(100% - 22px); /* Adjust width considering padding/border */
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        input[type="submit"], button[type="submit"] {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+            margin-top: 15px; /* Added margin top */
+            /* margin-right: 10px; */ /* Removed margin-right */
+            display: block; /* Make button block */
+            width: 100%; /* Make button full width */
+        }
+        input[type="submit"]:hover, button[type="submit"]:hover {
+            background-color: #0056b3;
+        }
+        /* Style for disabled button */
+        button[type="submit"]:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .section {
+            border-top: 1px solid #eee;
+            margin-top: 30px;
+            padding-top: 20px;
+        }
+        .processing-note {
+            margin-top: 20px;
+            font-style: italic;
+            color: #666;
+            text-align: center;
+            font-size: 0.9em;
+        }
+        #spinner {
+            display: none; /* Hidden by default */
+            border: 4px solid #f3f3f3; /* Light grey */
+            border-top: 4px solid #3498db; /* Blue */
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        .model-selection {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+        }
+        .model-selection label {
+             margin-right: 15px;
+             font-weight: normal; /* Normal weight for radio labels */
+        }
+        .model-selection input[type="radio"] {
+            margin-right: 5px;
+            vertical-align: middle;
+        }
 
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>OurFamilyWizard Message Processor</h1>
+        <h2>Upload Log & Generate Analysis Reports</h2>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <ul class="flash-messages">
+            {% for category, message in messages %}
+              {# Assign category based on message content if not explicitly set #}
+              {% set effective_category = category if category in ['success', 'error', 'info', 'warning'] else ('error' if 'error' in message.lower() or 'fail' in message.lower() else ('warning' if 'warning' in message.lower() or 'completed' in message.lower() else ('success' if 'success' in message.lower() else 'info'))) %}
+              <li class="{{ effective_category }}">{{ message }}</li>
+            {% endfor %}
+            </ul>
+          {% endif %}
+        {% endwith %}
+
+        <div class="section">
+            <h3>Step 1: Upload PDF & Create Monthly Logs</h3>
+            <form method="post" action="{{ url_for('upload_file') }}" enctype="multipart/form-data" id="uploadForm">
+                <label for="pdf_file">Select OFW Message Log PDF:</label>
+                <input type="file" name="pdf_file" id="pdf_file" accept=".pdf" required>
+                <input type="submit" value="Upload and Process Logs">
+                <p class="processing-note">
+                    Processing the PDF and uploading raw monthly logs may take several minutes for large files. Previous temporary data will be removed.
+                </p>
+            </form>
+        </div>
+
+        {% if show_generate_button and process_id %}
+        <div class="section">
+            <!-- Updated Title -->
+            <h3>Step 2: Generate Monthly & Yearly Analysis Reports</h3>
+             <p>Select the AI model and click below to generate analysis reports for each month and a summary report for each year.</p>
+             <form method="post" action="{{ url_for('generate_reports') }}" id="reportForm">
+                 <input type="hidden" name="process_id" value="{{ process_id }}">
+
+                 <!-- Model Selection Radio Buttons -->
+                 <div class="model-selection">
+                     <strong>Choose AI Model:</strong><br>
+                     <input type="radio" id="gemini" name="ai_model" value="gemini" checked>
+                     <label for="gemini">Google Gemini 1.5 Flash</label>
+                     <br>
+                     <input type="radio" id="azure" name="ai_model" value="azure">
+                     <label for="azure">Azure OpenAI GPT-4o Mini</label>
+                 </div>
+                 <!-- End Model Selection -->
+
+                 <!-- Updated Button Text -->
+                 <button type="submit">Generate Monthly & Yearly Reports</button>
+                 <!-- Updated Processing Note -->
+                 <p class="processing-note">
+                    Generating AI analysis reports (monthly and yearly) can take a significant amount of time (potentially 20+ seconds *per month/year* plus API processing). Please be patient and do not navigate away. The page will reload when finished.
+                </p>
+             </form>
+        </div>
+        {% endif %}
+
+         <div id="spinner"></div>
+
+    </div>
+
+    <script>
+        // Optional: Show spinner during form submission
+        const uploadForm = document.getElementById('uploadForm');
+        const reportForm = document.getElementById('reportForm');
+        const spinner = document.getElementById('spinner');
+
+        if (uploadForm) {
+            uploadForm.addEventListener('submit', function() {
+                spinner.style.display = 'block';
+                const uploadButton = uploadForm.querySelector('input[type="submit"]');
+                if(uploadButton) {
+                    uploadButton.disabled = true;
+                    uploadButton.value = 'Processing Upload...';
+                }
+                // Hide the generate report section if it exists, during upload
+                const reportSection = document.querySelector('#reportForm')?.closest('.section');
+                if(reportSection) {
+                    reportSection.style.display = 'none';
+                }
+            });
+        }
+
+         if (reportForm) {
+            reportForm.addEventListener('submit', function() {
+                spinner.style.display = 'block';
+                const reportButton = reportForm.querySelector('button[type="submit"]');
+                if(reportButton) {
+                    reportButton.disabled = true; // Disable button
+                    reportButton.textContent = 'Generating Reports... Please Wait';
+                }
+            });
+        }
+
+        // Hide spinner if page is loaded from cache (e.g., back button)
+        window.addEventListener('pageshow', function(event) {
+            if (event.persisted) {
+                spinner.style.display = 'none';
+                // Re-enable upload button if needed
+                 const uploadButton = uploadForm?.querySelector('input[type="submit"]');
+                 if(uploadButton) {
+                    uploadButton.disabled = false;
+                    uploadButton.value = 'Upload and Process Logs';
+                 }
+                 // Re-enable report button if needed
+                 if(reportForm){
+                    const reportButton = reportForm.querySelector('button[type="submit"]');
+                    if(reportButton) {
+                        reportButton.disabled = false; // Re-enable button
+                        reportButton.textContent = 'Generate Monthly & Yearly Reports'; // Reset text
+                    }
+                 }
+            }
+        });
+    </script>
+</body>
+</html>
