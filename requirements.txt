@@ -1,1 +1,8 @@
-
+Flask
+PyMuPDF
+reportlab
+azure-storage-blob
+python-dotenv
+requests
+google-generativeai
+waitress
